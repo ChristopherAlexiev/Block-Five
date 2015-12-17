@@ -1,0 +1,326 @@
+package com.bayviewglen.blackjack;
+
+import java.util.Scanner;
+
+public class BlackJackAssignment {
+	private static Scanner keyboard = new Scanner(System.in);
+	// declare constants and global variable wallet
+	static final int DEFAULT_STARTING_WALLET = 500;
+	static final int MIN_WALLET = 0;
+	static final int MIN_BET = 0;
+	static final int DOUBLE = 2;
+	static final int OPTION_ONE = 1;
+	static final int OPTION_TWO = 2;
+	static final int OPTION_THREE = 3;
+	static final int MAX_DEALER_CHECK = 17;
+	static final int BLACKJACK = 21;
+	static final int BIG_ACE = 11;
+	static final int SMALL_ACE = 1;
+	static final int GENERAL_NOTHING = 0;
+	static final int GENERAL_ONE = 1;
+	static final int DECIMAL_SYSTEM = 10;
+	static final int SHORT_HAND_LENGTH = 2;
+	static final int OTHER_SHORT_HAND_LENGTH = 3;
+	static final int NUM_CARD_FIRST_CHARACTERS = 13;
+	static final int NUM_CARD_SUITS = 4;
+	static final int FIRST_CHARACTER_EIGHT = 8;
+	static final int FIRST_CHARACTER_QUEEN = 9;
+	static final int FIRST_CHARACTER_JACK = 10;
+	static final int FIRST_CHARACTER_KING = 11;
+	static final int FIRST_CHARACTER_ACE = 12;
+	static int wallet = DEFAULT_STARTING_WALLET; // declare wallet variable
+
+	public static void main(String[] args) { // MAIN METHOD
+		for (int i = GENERAL_ONE; i > 0; i++) {
+			boolean playAgain = true;
+			int currentBet;
+			// Get person's name and introduction
+			System.out.print("What is your name? ");
+			String firstName = keyboard.nextLine();
+			System.out.println("Hello " + firstName + ", press enter to start playing BlackJack!");
+			keyboard.nextLine();
+			// while loop for playing game
+			while (wallet >= MIN_WALLET && playAgain) {
+				// Get the user's bet and card hand and display it
+				System.out.println("Getting your bet --------------------------");
+				currentBet = getBet(wallet);
+				System.out.println("Your Cards ------------------------------");
+				String playerHand = drawCard() + " " + drawCard() + "";
+				String dealerHandDisplay = drawCard() + " " + "XX";
+				String dealerHand = dealerHandDisplay.split(" ")[0];
+				System.out.println("Dealer hand: " + dealerHandDisplay);
+				System.out.println("Player hand: " + playerHand);
+				System.out.println("Your bet is " + currentBet + " dollars.");
+				System.out.println("Playing Game ------------------------------");
+				boolean gameInProgress = true;
+				boolean hasHit = false;
+				// start the interactive part of the game in a loop
+				while (gameInProgress) {
+					if (!hasHit && DOUBLE * currentBet <= wallet) {
+						System.out.println("What do you want to do? Press 1 to hit, 2 to stay, and 3 to double down.");
+					} else {
+						System.out.println("What do you want to do? Press 1 to hit and 2 to stay.");
+					}
+					String command = keyboard.nextLine();
+					if (command.equals("1")) {
+						// perform a hit, then perform autoWincheck and display
+						// new hand if no winner found
+						playerHand += " " + drawCard();
+						if (getTotal(playerHand) >= BLACKJACK) {
+							// if player has reached blackjack add a dealer card
+							dealerHand += " " + drawCard();
+						}
+						gameInProgress = performAutoWinCheck(playerHand, dealerHand, currentBet, gameInProgress);
+						if (gameInProgress == true) {
+							System.out.println("Dealer hand: " + dealerHandDisplay);
+							System.out.println("Player hand: " + playerHand);
+							hasHit = true;
+						}
+					} else if (command.equals("3")) {
+						// perform a double down by adding a card and doing a
+						// autoWinCheck and stay with twice the bet
+						if (!hasHit && DOUBLE * currentBet <= wallet) {
+							currentBet = DOUBLE * currentBet;
+							playerHand += " " + drawCard();
+							dealerHand = dealerPlays(dealerHand, playerHand);
+							gameInProgress = performAutoWinCheck(playerHand, dealerHand, currentBet, gameInProgress);
+							if (gameInProgress == true) {
+								wallet = performStay(dealerHand, playerHand, currentBet);
+							}
+							gameInProgress = false;
+						} else {
+							System.out.println("Please enter a valid command");
+						}
+					} else if (command.equals("2")) {
+						// Perform a stay, perform autoWinCheck first
+						dealerHand = dealerPlays(dealerHand, playerHand);
+						gameInProgress = performAutoWinCheck(playerHand, dealerHand, currentBet, gameInProgress);
+						if (gameInProgress == true) {
+							wallet = performStay(dealerHand, playerHand, currentBet);
+							gameInProgress = false;
+						}
+					} else {
+						System.out.println("Please enter a valid command!");
+					}
+				}
+				// Ask user if they want to play again if they have enough money
+				if (wallet > MIN_WALLET) {
+					playAgain = playAgain();
+					if (playAgain == false) {
+						wallet = DEFAULT_STARTING_WALLET;
+					}
+				} else {
+					System.out.println("You lost your money! Sorry, bye.");
+					System.out.println("Play again soon with more money");
+					playAgain = false;
+					wallet = DEFAULT_STARTING_WALLET;
+				}
+			}
+			System.out.println("////////////////////////////////NEW GAME//////////////////////////////");
+		}
+	}
+
+	////////////// OTHER METHODS ////////////////////////
+	// Asks user whether they want to play again
+	private static boolean playAgain() {
+		String answer = "";
+		while (!(answer.equals("y") || answer.equals("yes") || answer.equals("n") || answer.equals("no"))) {
+			System.out.println("Would you like to play again? ");
+			answer = keyboard.nextLine();
+			answer = answer.toLowerCase();
+			if (answer.equals("n") || answer.equals("no")) {
+				return false;
+			} else if (answer.equals("y") || answer.equals("yes")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// draw one card and return it as a string
+	static String drawCard() {
+		int cardNumber = (int) (Math.random() * (NUM_CARD_FIRST_CHARACTERS));
+		int styleNumber = (int) (Math.random() * (NUM_CARD_SUITS));
+		String cardNotation = "";
+		// Make the first letter/number
+		if (cardNumber <= FIRST_CHARACTER_EIGHT) {
+			cardNotation += "" + (cardNumber + DOUBLE);
+		} else if (cardNumber == FIRST_CHARACTER_QUEEN) {
+			cardNotation += "" + 'Q';
+		} else if (cardNumber == FIRST_CHARACTER_JACK) {
+			cardNotation += "" + 'J';
+		} else if (cardNumber == FIRST_CHARACTER_KING) {
+			cardNotation += "" + 'K';
+		} else if (cardNumber == FIRST_CHARACTER_ACE) {
+			cardNotation += "" + 'A';
+		}
+		// make the last letter
+		if (styleNumber == GENERAL_NOTHING) {
+			cardNotation += "" + 'S';
+		} else if (styleNumber == GENERAL_ONE) {
+			cardNotation += "" + 'H';
+		} else if (styleNumber == DOUBLE) {
+			cardNotation += "" + 'C';
+		} else if (styleNumber == OPTION_THREE) {
+			cardNotation += "" + 'D';
+		}
+		return cardNotation;
+	}
+
+	// return true if the player wins and false if the dealer wins
+	static boolean playerWins(int playerValue, int dealerValue) {
+		Boolean playerWon = false;
+		return playerWon;
+	}
+
+	// count the score of card numbers in a hand (without the aces)
+	static int totalNoAces(String hand) {
+		int score = GENERAL_NOTHING;
+		for (int i = GENERAL_NOTHING; i < hand.length(); i++) {
+			try {
+				if (hand.charAt(i) == 'J' || hand.charAt(i) == 'K' || hand.charAt(i) == 'Q'
+						|| Integer.parseInt(hand.substring(i, i + GENERAL_ONE), DECIMAL_SYSTEM) == GENERAL_ONE) {
+					score += 10;
+				} else if (DOUBLE <= Integer.parseInt(hand.substring(i, i + GENERAL_ONE), DECIMAL_SYSTEM)
+						&& 9 >= Integer.parseInt(hand.substring(i, i + GENERAL_ONE), DECIMAL_SYSTEM)) {
+					score += Integer.parseInt(hand.substring(i, i + GENERAL_ONE), DECIMAL_SYSTEM);
+				}
+			} catch (Exception ex) {
+			}
+		}
+		return score;
+	}
+
+	// return the value of hand given the hand
+	static int getTotal(String hand) {
+		int numAces = 0; // find number of Aces
+		for (int i = GENERAL_NOTHING; i < hand.length(); i++) {
+			if (hand.substring(i, i + GENERAL_ONE).equals("A")) {
+				numAces++;
+			}
+		}
+		int totalWithoutAces = totalNoAces(hand);
+		return calculateScore(totalWithoutAces, numAces); // get total score
+	}
+
+	// calculate the score of a hand
+	static int calculateScore(int noAceScore, int numberAces) {
+		int score = GENERAL_NOTHING;
+		if (numberAces == GENERAL_NOTHING) {
+			score = noAceScore;
+		} else if (noAceScore + BIG_ACE + numberAces - SMALL_ACE > BLACKJACK) {
+			score = noAceScore + numberAces;
+		} else {
+			score = noAceScore + BIG_ACE + numberAces - SMALL_ACE;
+		}
+		return score;
+	}
+
+	// ensure that the bet is <= wallet and > 0
+	static int getBet(int maxBet) {
+		boolean isValidBet = false;
+		// prompt user for a valid bet
+		while (!isValidBet) {
+			System.out.println("Please enter a bet(You have " + maxBet + " dollars):");
+			try {
+				String sBet = keyboard.nextLine();
+				int bet = Integer.parseInt(sBet);
+				if (bet > MIN_BET && bet <= maxBet) {
+					return bet;
+				} else {
+					System.out.println("Ahhh, you need to bet a value between 0 and " + maxBet);
+				}
+			} catch (Exception ex) {
+				System.out.println("Ummmmm... not a valid int!!!");
+			}
+		}
+		return GENERAL_NOTHING;
+	}
+
+	// This method performs a stay game command with the user
+	static int performStay(String dealerHand, String playerHand, int currentBet) {
+		int dealerValue = getTotal(dealerHand);
+		int playerValue = getTotal(playerHand);
+		if (dealerValue == playerValue) {
+			tieGraphics(dealerHand, playerHand);
+		} else if (dealerValue > playerValue) {
+			wallet = dealerWinGraphics(dealerHand, playerHand, currentBet);
+		} else {
+			wallet = playerWinGraphics(dealerHand, playerHand, currentBet);
+		}
+		return wallet;
+	}
+
+	// Check if dealer or player have a blackjack or bust and return 3, 2, 1, or
+	// 0 if the player automatically ties, loses, wins, or nothing happens
+	static int autoWinCheck(String playerHand, String dealerHand) {
+		if (getTotal(playerHand) == BLACKJACK && getTotal(dealerHand) == BLACKJACK) {
+			// a tie
+			return OPTION_THREE;
+		} else if (getTotal(playerHand) > BLACKJACK || getTotal(dealerHand) == BLACKJACK) {
+			return OPTION_TWO;
+		} else if (getTotal(playerHand) == BLACKJACK || getTotal(dealerHand) > BLACKJACK) {
+			return OPTION_ONE;
+		} else {
+			return GENERAL_NOTHING;
+		}
+	}
+
+	// User graphics for a player winner, also calculate new wallet
+	static int playerWinGraphics(String dealerHand, String playerHand, int currentBet) {
+		System.out.println("The dealer's hand is: " + dealerHand + " ---> Score: " + getTotal(dealerHand));
+		System.out.println("The player's hand is: " + playerHand + " ---> Score: " + getTotal(playerHand));
+		System.out.println("PLAYER WINS!!!!!");
+		wallet += currentBet;
+		System.out.println("You have " + wallet + " dollars.");
+		System.out.println("Game complete---------------------------------------------------------------------------");
+		return wallet;
+	}
+
+	// User graphics for a dealer winner, also calculate new wallet
+	static int dealerWinGraphics(String dealerHand, String playerHand, int currentBet) {
+		System.out.println("The dealer's hand is: " + dealerHand + " ---> Score: " + getTotal(dealerHand));
+		System.out.println("The player's hand is: " + playerHand + " ---> Score: " + getTotal(playerHand));
+		System.out.println("DEALER WINS!!!!!");
+		wallet -= currentBet;
+		System.out.println("You have " + wallet + " dollars.");
+		System.out.println("Game complete--------------------------------------------------------------------------");
+		return wallet;
+	}
+
+	// User graphics for a tie
+	static void tieGraphics(String dealerHand, String playerHand) {
+		System.out.println("The dealer's hand is: " + dealerHand + " ---> Score: " + getTotal(dealerHand));
+		System.out.println("The player's hand is: " + playerHand + " ---> Score: " + getTotal(playerHand));
+		System.out.println("PLAYER AND DEALER TIED!!!!");
+		System.out.println("You have " + wallet + " dollars.");
+		System.out.println("Game complete-------------------------------------------------------------------------");
+	}
+
+	// Perform an autoWinCheck using the autoWinCheck function, display
+	// graphics, return if game is finished
+	static boolean performAutoWinCheck(String playerHand, String dealerHand, int currentBet, boolean gameInProgress) {
+		if (autoWinCheck(playerHand, dealerHand) == OPTION_ONE) {
+			wallet = playerWinGraphics(dealerHand, playerHand, currentBet);
+			return false;
+		} else if (autoWinCheck(playerHand, dealerHand) == OPTION_TWO) {
+			wallet = dealerWinGraphics(dealerHand, playerHand, currentBet);
+			return false;
+		} else if (autoWinCheck(playerHand, dealerHand) == OPTION_THREE) {
+			tieGraphics(dealerHand, playerHand);
+			return false;
+		}
+		return true;
+	}
+
+	// dealer adds a card if he/she has only one and adds more cards if needed
+	static String dealerPlays(String dealerHand, String playerHand) {
+		if (dealerHand.length() == SHORT_HAND_LENGTH || dealerHand.length() == OTHER_SHORT_HAND_LENGTH) {
+			dealerHand += " " + drawCard();
+		}
+		while (getTotal(dealerHand) < getTotal(playerHand) && getTotal(dealerHand) < MAX_DEALER_CHECK) {
+			dealerHand += " " + drawCard();
+		}
+		return dealerHand;
+	}
+}
